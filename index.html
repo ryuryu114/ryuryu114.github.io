@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111214" />
+    <meta name="description" content="Tarkov PMC movement atlas using tarkov.dev coordinates" />
+    <title>Raidloom</title>
+    <script type="module" crossorigin src="/assets/index-DfapQsKQ.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BwsbJxB6.css">
+  </head>
+  <body>
+    <div id="app">
+      <main id="map" aria-label="Tactical map"></main>
+
+      <div class="map-vignette" aria-hidden="true"></div>
+      <div class="map-grid" aria-hidden="true"></div>
+
+      <header class="command-bar hud-surface">
+        <div class="identity">
+            <span class="identity__eyebrow">TACTICAL RAID INTELLIGENCE</span>
+            <h1>RAIDLOOM</h1>
+        </div>
+        <div class="map-selector-wrap">
+          <button class="map-selector" id="map-selector" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="map-menu" title="マップを選択">
+            <span id="map-name">SHORELINE</span><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#expand_more" /></svg>
+          </button>
+          <div class="map-menu" id="map-menu" role="menu" hidden></div>
+        </div>
+        <div class="top-map-controls" aria-label="マップ表示設定">
+          <div class="top-map-style segmented-control" role="group" aria-label="地図画像">
+            <button class="segment is-active" id="map-style-abstract" type="button" aria-label="Abstract map" title="Abstract map" aria-pressed="true"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#map" /></svg><span>Abstract</span></button>
+            <button class="segment" id="map-style-satellite" type="button" aria-label="Satellite map" title="Satellite map" aria-pressed="false"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#satellite" /></svg><span>Satellite</span></button>
+          </div>
+          <label class="top-level-select" for="map-level"><span class="micro-label">LEVEL</span><select class="select-input" id="map-level" aria-label="表示階層"></select></label>
+          <output id="satellite-status" class="satellite-status">ABSTRACT</output><output id="level-hint" class="level-hint">GROUND</output>
+        </div>
+        <div class="tarkov-clocks" aria-label="Tarkov time">
+          <div class="tarkov-clock"><span>LEFT</span><strong id="tarkov-time-left">00:00:00</strong></div>
+          <div class="tarkov-clock"><span>RIGHT</span><strong id="tarkov-time-right">12:00:00</strong></div>
+        </div>
+        <nav class="command-actions" aria-label="画面操作">
+          <button class="icon-button" id="fit-map" type="button" title="マップ全体を表示" aria-label="マップ全体を表示"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#my_location" /></svg></button>
+          <button class="text-button" id="ruler-toggle" type="button" title="2点間の距離を測定" aria-label="距離測定モードを切り替え" aria-pressed="false"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#straighten" /></svg><span>配置</span></button>
+          <button class="text-button" id="ruler-clear" type="button" title="すべての測定を消去" aria-label="測定をすべて消去" disabled><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#delete_sweep" /></svg><span>全消去</span></button>
+          <button class="icon-button" id="fullscreen" type="button" title="全画面 (F)" aria-label="全画面表示"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#fullscreen" /></svg></button>
+        </nav>
+      </header>
+      <button class="icon-button ui-reveal-toggle" id="toggle-ui" type="button" title="UIを隠す (H)" aria-label="UIを隠す (H)"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#visibility_off" /></svg></button>
+
+      <aside class="fixed-panel task-board-panel hud-surface is-collapsed" id="task-board-panel" aria-label="タスクボード">
+        <div class="panel-header">
+          <div><span class="micro-label">TASK BOARD / OBJECTIVES</span><h2>タスクボード</h2></div>
+          <button class="panel-collapse" type="button" title="タスクボードを展開" aria-label="タスクボードを展開" aria-expanded="false"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#assignment" /></svg></button>
+        </div>
+        <div class="panel-body task-board-body">
+          <div class="task-board-toolbar"><input id="task-board-search" class="filter-search" type="search" placeholder="Search tasks" aria-label="タスクを検索" /><button class="icon-button" id="task-layer-toggle" type="button" title="タスクレイヤーを表示" aria-label="タスクレイヤーを表示" aria-pressed="true"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#visibility" /></svg></button><button class="icon-button" id="task-lock-clear" type="button" title="ロックを全解除" aria-label="ロックを全解除"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#lock_open" /></svg></button></div>
+          <label class="toggle-card task-locked-toggle"><input id="task-locked-only" type="checkbox" checked /><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#lock" /></svg><span>Locked tasks only</span><small id="task-locked-count">0</small></label>
+          <div id="task-board-list" class="task-board-list" aria-label="タスク一覧"></div>
+          <section id="task-board-detail" class="task-board-detail" aria-live="polite"><span class="empty-state">タスクを選択してください</span></section>
+          <footer class="source-note"><span>MAP DATA</span><a id="attribution-link" href="https://tarkov.dev/map/shoreline" target="_blank" rel="noreferrer">tarkov.dev / API snapshot</a></footer>
+        </div>
+      </aside>
+
+      <aside class="fixed-panel intel-panel hud-surface is-collapsed" id="intel-panel" aria-label="マップインテル">
+        <div class="panel-header">
+          <div>
+            <span class="micro-label">MAP INTEL / STATIC SNAPSHOT</span>
+            <h2>地点フィルター</h2>
+          </div>
+          <button class="panel-collapse" type="button" title="マップインテルを展開" aria-label="マップインテルを展開" aria-expanded="false"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#filter_list" /></svg></button>
+        </div>
+        <div class="panel-body">
+          <div class="filter-toolbar"><input id="map-intel-search" class="filter-search" type="search" placeholder="Search map intel" aria-label="Search map intel categories and locations" /><button id="filter-show-all" type="button" title="Show all map intel" aria-label="Show all map intel"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#visibility" /></svg></button><button id="filter-hide-all" type="button" title="Hide all map intel" aria-label="Hide all map intel"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#visibility_off" /></svg></button></div>
+          <div id="map-intel-search-summary" class="map-intel-search-summary" aria-live="polite"></div>
+          <div id="map-intel-isolation" class="map-intel-isolation" hidden><span id="map-intel-isolation-label"></span><button id="map-intel-isolation-clear" class="icon-button" type="button" title="Clear item isolation" aria-label="Clear item isolation"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#remove" /></svg></button></div>
+          <div id="map-intel-list" class="map-intel-list" aria-label="Map intel filters"></div>
+        </div>
+      </aside>
+
+
+      <section class="timeline-shell hud-surface is-collapsed" aria-label="レイド時間" aria-expanded="false">
+        <button class="timeline-collapse icon-button" id="timeline-collapse" type="button" title="タイムラインを展開" aria-label="タイムラインを展開" aria-expanded="false"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#timeline" /></svg></button>
+        <button class="play-button" id="play-toggle" type="button" title="再生" aria-label="再生"><svg id="play-icon" class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#play_arrow" /></svg></button>
+        <div class="time-readout">
+          <span class="micro-label">RAID ELAPSED</span>
+          <strong id="time-display">00:00</strong>
+        </div>
+        <div class="timeline-track">
+          <input id="time-slider" type="range" min="0" max="2700" step="1" value="0" aria-label="経過時間" />
+          <div class="timeline-ticks" aria-hidden="true"><span>00</span><span>15</span><span>30</span><span>45</span></div>
+        </div>
+        <button class="speed-button" id="speed-toggle" type="button" aria-label="再生速度"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#speed" /></svg><span id="speed-label">×1</span></button>
+        <label class="timeline-layer-toggle heat-toggle" title="Heatmap" aria-label="Heatmap"><input id="layer-heat" type="checkbox" checked /><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#whatshot" /></svg></label>
+        <label class="timeline-layer-toggle route-toggle" title="PMC routes" aria-label="PMC routes"><input id="layer-route" type="checkbox" checked /><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#alt_route" /></svg></label>
+        <label class="timeline-layer-toggle pmc-toggle" title="PMC positions" aria-label="PMC positions"><input id="layer-pmc" type="checkbox" checked /><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#person" /></svg></label>
+        <div class="remaining-time">
+          <span class="micro-label">REMAINING</span>
+          <strong id="remaining-display">45:00</strong>
+        </div>
+        <div class="timeline-controls" aria-label="シミュレーション設定">
+          <label class="compact-field" for="pmc-count"><span>PMC</span><output id="pmc-count-output">12</output><input id="pmc-count" class="range-control" type="range" min="10" max="14" step="1" value="12" /></label>
+          <label class="compact-field seed-field" for="seed-input"><span>SEED</span><input id="seed-input" class="number-input" type="number" min="1" max="999999" value="260819" /></label>
+          <button class="primary-action" id="regenerate" type="button" title="分布を再生成" aria-label="分布を再生成"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#refresh" /></svg></button>
+          <label class="compact-field" for="heat-radius"><span>HEAT</span><output id="heat-radius-output">1.0</output><input id="heat-radius" class="range-control" type="range" min="0.6" max="1.8" step="0.1" value="1" /></label>
+          <label class="compact-field" for="pace"><span>PACE</span><output id="pace-output">1.0</output><input id="pace" class="range-control" type="range" min="0.7" max="1.4" step="0.1" value="1" /></label>
+          <label class="timeline-layer-toggle places-toggle" title="Places" aria-label="Places"><input id="layer-labels" type="checkbox" checked /><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#label" /></svg></label>
+          <label class="timeline-layer-toggle extract-toggle" title="Extract Routes" aria-label="Extract Routes"><input id="layer-extract-routes" type="checkbox" checked /><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#alt_route" /></svg></label>
+          <button class="text-button" id="nav-mask-toggle" type="button" disabled aria-label="通行可能領域を表示" aria-pressed="false" title="通行可能領域を表示"><svg class="material-icon" aria-hidden="true"><use href="/icons/material-symbols.svg#map" /></svg></button>
+          <output class="nav-status-row" id="nav-status">INIT</output>
+          <output class="render-status-inline" id="render-status">READY</output>
+        </div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+  </body>
+</html>
